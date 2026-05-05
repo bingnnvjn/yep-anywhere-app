@@ -8,6 +8,7 @@ import android.webkit.*
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,8 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.yepanywhere.app.ui.theme.GradientEnd
-import com.yepanywhere.app.ui.theme.GradientStart
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -33,7 +34,6 @@ fun ChatScreen(
     password: String,
     onBackToConfig: () -> Unit
 ) {
-    // Use remember to create the savePassword reference that WebView can access
     val savePassword = remember { password }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -41,7 +41,27 @@ fun ChatScreen(
     var canGoBack by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
 
-    // File upload handler
+    // Auto-reconnect state
+    var reconnecting by remember { mutableStateOf(false) }
+    var retryCount by remember { mutableIntStateOf(0) }
+    val maxRetries = 5
+    var lastErrorUrl by remember { mutableStateOf("") }
+
+    // Reset and retry when error changes
+    LaunchedEffect(retryCount) {
+        if (reconnecting && retryCount in 1..maxRetries) {
+            val delaySec = when {
+                retryCount <= 1 -> 1000L
+                retryCount == 2 -> 2000L
+                retryCount == 3 -> 4000L
+                retryCount == 4 -> 8000L
+                else -> 16000L
+            }
+            delay(delaySec)
+            webView?.loadUrl(if (lastErrorUrl.isNotBlank()) lastErrorUrl else serverUrl)
+        }
+    }
+
     var pendingFileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
 
     val fileUploadLauncher = rememberLauncherForActivityResult(
@@ -54,10 +74,14 @@ fun ChatScreen(
         pendingFileCallback = null
     }
 
-    // Back button handling
     BackHandler(enabled = canGoBack) {
-        webView?.let {
-            if (it.canGoBack()) it.goBack()
+        if (reconnecting) {
+            reconnecting = false
+            errorMessage = "连接已中断"
+        } else {
+            webView?.let {
+                if (it.canGoBack()) it.goBack()
+            }
         }
     }
 
@@ -71,7 +95,14 @@ fun ChatScreen(
                             fontSize = 16.sp,
                             fontWeight = FontWeight.SemiBold
                         )
-                        if (isLoading) {
+                        if (reconnecting) {
+                            Text(
+                                "重连中 ($retryCount/$maxRetries)...",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (isLoading && !reconnecting) {
                             LinearProgressIndicator(
                                 progress = { progress / 100f },
                                 modifier = Modifier
@@ -114,7 +145,7 @@ fun ChatScreen(
                 .padding(padding)
         ) {
             // Error state
-            if (errorMessage != null) {
+            if (errorMessage != null && !reconnecting) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
@@ -137,11 +168,23 @@ fun ChatScreen(
                         color = MaterialTheme.colorScheme.outline
                     )
                     Spacer(Modifier.height(24.dp))
-                    Button(
-                        onClick = onBackToConfig,
-                        shape = RoundedCornerShape(14.dp)
-                    ) {
-                        Text("返回设置")
+                    Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Button(
+                            onClick = {
+                                reconnecting = true
+                                retryCount = 0
+                                retryCount = 1
+                            },
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("重试")
+                        }
+                        OutlinedButton(
+                            onClick = onBackToConfig,
+                            shape = RoundedCornerShape(14.dp)
+                        ) {
+                            Text("返回设置")
+                        }
                     }
                 }
             }
@@ -171,7 +214,10 @@ fun ChatScreen(
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                 isLoading = true
-                                errorMessage = null
+                                // Successful navigation = not an error anymore
+                                if (!reconnecting) {
+                                    errorMessage = null
+                                }
                             }
 
                             override fun onPageFinished(view: WebView?, url: String?) {
@@ -182,6 +228,13 @@ fun ChatScreen(
                                 if (savePassword.isNotBlank()) {
                                     view?.let { autoLogin(it, savePassword) }
                                 }
+
+                                // Page loaded successfully — stop reconnecting
+                                if (reconnecting) {
+                                    reconnecting = false
+                                    errorMessage = null
+                                    retryCount = 0
+                                }
                             }
 
                             override fun onReceivedError(
@@ -190,13 +243,21 @@ fun ChatScreen(
                                 error: WebResourceError?
                             ) {
                                 if (request?.isForMainFrame == true) {
-                                    errorMessage = when (error?.errorCode) {
-                                        ERROR_HOST_LOOKUP -> "找不到服务器，请检查地址"
-                                        ERROR_CONNECT -> "连接被拒绝，服务器是否在运行？"
-                                        ERROR_TIMEOUT -> "连接超时"
-                                        else -> "连接失败（${error?.description ?: "未知错误"}）"
+                                    val url = request.url.toString()
+                                    lastErrorUrl = url
+
+                                    when (error?.errorCode) {
+                                        ERROR_HOST_LOOKUP -> errorMessage = "找不到服务器"
+                                        ERROR_CONNECT -> errorMessage = "连接被拒绝"
+                                        ERROR_TIMEOUT -> errorMessage = "连接超时"
+                                        else -> errorMessage = "连接失败"
                                     }
-                                    isLoading = false
+
+                                    // Start auto-reconnect
+                                    if (!reconnecting && retryCount < maxRetries) {
+                                        reconnecting = true
+                                        retryCount = 1
+                                    }
                                 }
                             }
                         }
@@ -233,8 +294,35 @@ fun ChatScreen(
                 modifier = Modifier.fillMaxSize()
             )
 
-            // Loading overlay
-            if (isLoading && errorMessage == null) {
+            // Reconnecting overlay
+            if (reconnecting) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background.copy(alpha = 0.85f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "重连中...",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            "第 $retryCount/$maxRetries 次尝试",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
+            }
+
+            // Initial loading overlay
+            if (isLoading && !reconnecting && errorMessage == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
