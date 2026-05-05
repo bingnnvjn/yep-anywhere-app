@@ -180,7 +180,7 @@ fun ChatScreen(
 
                                 // Auto-login if password is configured
                                 if (savePassword.isNotBlank()) {
-                                    autoLogin(view, savePassword)
+                                    view?.let { autoLogin(it, savePassword) }
                                 }
                             }
 

@@ -31,9 +31,10 @@ class MainActivity : ComponentActivity() {
                 val savedUrl by settings.serverUrl.collectAsState(initial = "")
                 val savedPassword by settings.password.collectAsState(initial = "")
 
-                if (isConfigured == null) return@YepAnywhereTheme
+                val configured = isConfigured
+                if (configured == null) return@YepAnywhereTheme
 
-                if (!isConfigured || showConfig) {
+                if (!configured || showConfig) {
                     ConfigScreen(
                         initialUrl = savedUrl,
                         initialPassword = savedPassword,
