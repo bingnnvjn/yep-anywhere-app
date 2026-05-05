@@ -3,6 +3,7 @@ package com.yepanywhere.app.ui.screens
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
 import android.view.ViewGroup
 import android.webkit.*
 import androidx.activity.compose.BackHandler
@@ -24,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @SuppressLint("SetJavaScriptEnabled")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 fun ChatScreen(
     serverUrl: String,
     password: String,
+    isDarkMode: Boolean,
     onBackToConfig: () -> Unit
 ) {
     val savePassword = remember { password }
@@ -41,13 +42,12 @@ fun ChatScreen(
     var canGoBack by remember { mutableStateOf(false) }
     var progress by remember { mutableIntStateOf(0) }
 
-    // Auto-reconnect state
+    // Auto-reconnect
     var reconnecting by remember { mutableStateOf(false) }
     var retryCount by remember { mutableIntStateOf(0) }
     val maxRetries = 5
     var lastErrorUrl by remember { mutableStateOf("") }
 
-    // Reset and retry when error changes
     LaunchedEffect(retryCount) {
         if (reconnecting && retryCount in 1..maxRetries) {
             val delaySec = when {
@@ -62,6 +62,7 @@ fun ChatScreen(
         }
     }
 
+    // File upload
     var pendingFileCallback by remember { mutableStateOf<ValueCallback<Array<Uri>>?>(null) }
 
     val fileUploadLauncher = rememberLauncherForActivityResult(
@@ -172,7 +173,6 @@ fun ChatScreen(
                         Button(
                             onClick = {
                                 reconnecting = true
-                                retryCount = 0
                                 retryCount = 1
                             },
                             shape = RoundedCornerShape(14.dp)
@@ -211,25 +211,23 @@ fun ChatScreen(
                             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
                         }
 
+                        // Apply dark mode to WebView
+                        applyWebViewDarkMode(this, isDarkMode)
+
                         webViewClient = object : WebViewClient() {
                             override fun onPageStarted(view: WebView?, url: String?, favicon: Bitmap?) {
                                 isLoading = true
-                                // Successful navigation = not an error anymore
-                                if (!reconnecting) {
-                                    errorMessage = null
-                                }
+                                if (!reconnecting) errorMessage = null
                             }
 
                             override fun onPageFinished(view: WebView?, url: String?) {
                                 isLoading = false
                                 canGoBack = view?.canGoBack() ?: false
 
-                                // Auto-login if password is configured
                                 if (savePassword.isNotBlank()) {
                                     view?.let { autoLogin(it, savePassword) }
                                 }
 
-                                // Page loaded successfully — stop reconnecting
                                 if (reconnecting) {
                                     reconnecting = false
                                     errorMessage = null
@@ -243,17 +241,13 @@ fun ChatScreen(
                                 error: WebResourceError?
                             ) {
                                 if (request?.isForMainFrame == true) {
-                                    val url = request.url.toString()
-                                    lastErrorUrl = url
-
-                                    when (error?.errorCode) {
-                                        ERROR_HOST_LOOKUP -> errorMessage = "找不到服务器"
-                                        ERROR_CONNECT -> errorMessage = "连接被拒绝"
-                                        ERROR_TIMEOUT -> errorMessage = "连接超时"
-                                        else -> errorMessage = "连接失败"
+                                    lastErrorUrl = request.url.toString()
+                                    errorMessage = when (error?.errorCode) {
+                                        ERROR_HOST_LOOKUP -> "找不到服务器"
+                                        ERROR_CONNECT -> "连接被拒绝"
+                                        ERROR_TIMEOUT -> "连接超时"
+                                        else -> "连接失败"
                                     }
-
-                                    // Start auto-reconnect
                                     if (!reconnecting && retryCount < maxRetries) {
                                         reconnecting = true
                                         retryCount = 1
@@ -274,14 +268,12 @@ fun ChatScreen(
                             ): Boolean {
                                 pendingFileCallback?.onReceiveValue(null)
                                 pendingFileCallback = filePathCallback
-
                                 val intent = params?.createIntent() ?: android.content.Intent(
                                     android.content.Intent.ACTION_GET_CONTENT
                                 ).apply {
                                     addCategory(android.content.Intent.CATEGORY_OPENABLE)
                                     type = "*/*"
                                 }
-
                                 fileUploadLauncher.launch(intent)
                                 return true
                             }
@@ -321,7 +313,7 @@ fun ChatScreen(
                 }
             }
 
-            // Initial loading overlay
+            // Loading overlay
             if (isLoading && !reconnecting && errorMessage == null) {
                 Box(
                     modifier = Modifier
@@ -331,6 +323,21 @@ fun ChatScreen(
                 ) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
+            }
+        }
+    }
+}
+
+private fun applyWebViewDarkMode(webView: WebView, isDark: Boolean) {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            WebView.setForceDarkForWebContent(isDark)
+        } else {
+            @Suppress("DEPRECATION")
+            webView.settings.forceDark = if (isDark) {
+                WebSettings.FORCE_DARK_ON
+            } else {
+                WebSettings.FORCE_DARK_OFF
             }
         }
     }

@@ -1,6 +1,8 @@
 package com.yepanywhere.app.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
@@ -25,7 +27,9 @@ import com.yepanywhere.app.ui.theme.GradientStart
 fun ConfigScreen(
     initialUrl: String,
     initialPassword: String,
-    onSave: (url: String, password: String) -> Unit
+    initialDarkMode: Int = 0,
+    onSave: (url: String, password: String) -> Unit,
+    onDarkModeChange: ((Int) -> Unit)? = null
 ) {
     var serverUrl by remember { mutableStateOf(initialUrl.ifBlank { "192.168.1.5:3400" }) }
     var password by remember { mutableStateOf(initialPassword) }
@@ -37,39 +41,32 @@ fun ConfigScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(40.dp))
 
         // App icon
         Box(
             modifier = Modifier
-                .size(80.dp)
-                .clip(RoundedCornerShape(22.dp))
+                .size(72.dp)
+                .clip(RoundedCornerShape(20.dp))
                 .background(
                     Brush.linearGradient(listOf(GradientStart, GradientEnd))
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text("⚡", fontSize = 36.sp)
+            Text("⚡", fontSize = 32.sp)
         }
 
-        Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(16.dp))
 
         // Title
         Text(
             "Yep Anywhere",
-            fontSize = 26.sp,
+            fontSize = 24.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        Text(
-            "连接到你的 AI 编码助手",
-            fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.outline,
-            modifier = Modifier.padding(top = 4.dp)
-        )
-
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(32.dp))
 
         // Config card
         Card(
@@ -88,9 +85,8 @@ fun ConfigScreen(
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(14.dp))
 
-                // Server URL
                 OutlinedTextField(
                     value = serverUrl,
                     onValueChange = { serverUrl = it },
@@ -107,7 +103,6 @@ fun ConfigScreen(
 
                 Spacer(Modifier.height(12.dp))
 
-                // Password
                 OutlinedTextField(
                     value = password,
                     onValueChange = { password = it },
@@ -128,23 +123,18 @@ fun ConfigScreen(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             if (serverUrl.isNotBlank()) {
-                                val url = normalizeUrl(serverUrl)
-                                onSave(url, password)
+                                onSave(normalizeUrl(serverUrl), password)
                             }
                         }
                     ),
                     trailingIcon = {
                         TextButton(onClick = { showPassword = !showPassword }) {
-                            Text(
-                                if (showPassword) "隐藏" else "显示",
-                                fontSize = 12.sp
-                            )
+                            Text(if (showPassword) "隐藏" else "显示", fontSize = 12.sp)
                         }
                     }
                 )
 
-                Spacer(Modifier.height(8.dp))
-
+                Spacer(Modifier.height(6.dp))
                 Text(
                     "如果未设置远程访问密码，留空即可",
                     fontSize = 12.sp,
@@ -153,27 +143,49 @@ fun ConfigScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                // Connect button
                 Button(
                     onClick = {
                         if (serverUrl.isNotBlank()) {
-                            val url = normalizeUrl(serverUrl)
-                            onSave(url, password)
+                            onSave(normalizeUrl(serverUrl), password)
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(52.dp),
+                        .height(50.dp),
                     shape = RoundedCornerShape(16.dp),
                     enabled = serverUrl.isNotBlank(),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
                 ) {
+                    Text("连 接", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        // Appearance card
+        if (onDarkModeChange != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(20.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+            ) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     Text(
-                        "连 接",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
+                        "外观",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(12.dp))
+                    DarkModeSelector(
+                        currentMode = initialDarkMode,
+                        onSelect = onDarkModeChange
                     )
                 }
             }
@@ -187,8 +199,61 @@ fun ConfigScreen(
             color = MaterialTheme.colorScheme.outline,
             textAlign = TextAlign.Center
         )
-
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+@Composable
+private fun DarkModeSelector(
+    currentMode: Int,
+    onSelect: (Int) -> Unit
+) {
+    val options = listOf(
+        0 to "跟随系统",
+        1 to "浅色",
+        2 to "深色"
+    )
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        options.forEach { (mode, label) ->
+            val selected = mode == currentMode
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .clip(RoundedCornerShape(14.dp))
+                    .then(
+                        if (selected) {
+                            Modifier.background(
+                                Brush.linearGradient(listOf(GradientStart, GradientEnd))
+                            )
+                        } else {
+                            Modifier
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(
+                                    1.dp,
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                                    RoundedCornerShape(14.dp)
+                                )
+                        }
+                    )
+                    .clickable { onSelect(mode) }
+                    .padding(vertical = 12.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    fontSize = 13.sp,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    color = if (selected) {
+                        androidx.compose.ui.graphics.Color.White
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    }
+                )
+            }
+        }
     }
 }
 
