@@ -39,5 +39,5 @@ val BubbleIncomingDark = Color(0x1AFFFFFF)
 val BubbleOutgoingDark = Color(0xFF0A84FF)
 
 // Frosted glass
-val GlassLight = Color(0xF2F2F7).copy(alpha = 0.94f)
-val GlassDark = Color(0x1C1C1E).copy(alpha = 0.94f)
+val GlassLight = Color(0xFFF2F2F7).copy(alpha = 0.94f)
+val GlassDark = Color(0xFF1C1C1E).copy(alpha = 0.94f)
