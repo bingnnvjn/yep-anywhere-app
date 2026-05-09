@@ -5,81 +5,99 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChatBubble
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.ChatBubble
+import androidx.compose.material.icons.outlined.Folder
+import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import com.yepanywhere.app.data.SettingsDataStore
-import com.yepanywhere.app.ui.screens.ChatScreen
-import com.yepanywhere.app.ui.screens.ConfigScreen
-import com.yepanywhere.app.ui.screens.SplashScreen
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.yepanywhere.app.data.SettingsStore
+import com.yepanywhere.app.navigation.AppNavGraph
+import com.yepanywhere.app.navigation.Routes
 import com.yepanywhere.app.ui.theme.YepAnywhereTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-
-    private lateinit var settings: SettingsDataStore
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        settings = (application as YepApplication).settingsDataStore
+        val settings = (application as YepApplication).settingsStore
 
         setContent {
-            var showSplash by remember { mutableStateOf(true) }
+            val darkModePref by settings.darkMode.collectAsState(initial = 0)
+            val systemDark = isSystemInDarkTheme()
+            val isDark = when (darkModePref) {
+                0 -> systemDark
+                1 -> false
+                2 -> true
+                else -> systemDark
+            }
 
-            if (showSplash) {
-                SplashScreen(onSplashFinished = { showSplash = false })
-            } else {
-                MainContent(settings)
+            YepAnywhereTheme(darkTheme = isDark) {
+                MainScreen()
             }
         }
     }
 }
 
+data class TabItem(
+    val route: String,
+    val label: String,
+    val selectedIcon: ImageVector,
+    val unselectedIcon: ImageVector,
+)
+
 @Composable
-private fun MainContent(settings: SettingsDataStore) {
-    val scope = rememberCoroutineScope()
-    var showConfig by remember { mutableStateOf(false) }
-    val isConfigured by settings.isConfigured.collectAsState(initial = null)
-    val savedUrl by settings.serverUrl.collectAsState(initial = "")
-    val savedPassword by settings.password.collectAsState(initial = "")
-    val darkModePref by settings.darkMode.collectAsState(initial = 0)
+fun MainScreen() {
+    val navController = rememberNavController()
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
 
-    val systemDark = isSystemInDarkTheme()
-    val isDark = remember(darkModePref, systemDark) {
-        when (darkModePref) {
-            0 -> systemDark
-            1 -> false
-            2 -> true
-            else -> systemDark
-        }
-    }
+    val tabs = listOf(
+        TabItem(Routes.INBOX, "会话", Icons.Filled.ChatBubble, Icons.Outlined.ChatBubble),
+        TabItem(Routes.FILES, "文件", Icons.Filled.Folder, Icons.Outlined.Folder),
+        TabItem(Routes.SETTINGS, "设置", Icons.Filled.Settings, Icons.Outlined.Settings),
+    )
 
-    YepAnywhereTheme(darkTheme = isDark) {
-        val configured = isConfigured
-        if (configured == null) return@YepAnywhereTheme
+    val showBottomBar = currentRoute in tabs.map { it.route }
 
-        if (!configured || showConfig) {
-            ConfigScreen(
-                initialUrl = savedUrl,
-                initialPassword = savedPassword,
-                initialDarkMode = darkModePref,
-                onSave = { url, password ->
-                    scope.launch {
-                        settings.save(url, password)
-                        showConfig = false
+    Scaffold(
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    tabs.forEach { tab ->
+                        val selected = currentRoute == tab.route
+                        NavigationBarItem(
+                            selected = selected,
+                            onClick = {
+                                if (currentRoute != tab.route) {
+                                    navController.navigate(tab.route) {
+                                        popUpTo(Routes.INBOX) { saveState = true }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            },
+                            icon = {
+                                Icon(
+                                    if (selected) tab.selectedIcon else tab.unselectedIcon,
+                                    contentDescription = tab.label
+                                )
+                            },
+                            label = { Text(tab.label) }
+                        )
                     }
-                },
-                onDarkModeChange = { mode ->
-                    scope.launch { settings.setDarkMode(mode) }
                 }
-            )
-        } else {
-            ChatScreen(
-                serverUrl = savedUrl,
-                password = savedPassword,
-                isDarkMode = isDark,
-                onBackToConfig = { showConfig = true }
-            )
+            }
         }
+    ) { padding ->
+        AppNavGraph(navController = navController)
     }
 }
