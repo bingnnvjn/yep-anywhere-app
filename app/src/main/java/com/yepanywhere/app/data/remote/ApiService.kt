@@ -6,6 +6,15 @@ import retrofit2.http.*
 
 interface ApiService {
 
+    @POST("/auth/login")
+    suspend fun login(@Body body: Map<String, String>): Response<Unit>
+
+    @POST("/auth/logout")
+    suspend fun logout(): Response<Unit>
+
+    @GET("/auth/status")
+    suspend fun getAuthStatus(): Map<String, Any>
+
     @GET("/api/inbox")
     suspend fun getInbox(): InboxResponse
 

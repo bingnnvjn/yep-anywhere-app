@@ -70,9 +70,10 @@ fun MainScreen(settings: SettingsStore) {
     val api = remember(serverUrl) {
         if (serverUrl.isBlank()) return@remember null
         val baseUrl = if (serverUrl.endsWith("/")) serverUrl else "$serverUrl/"
+        val authInterceptor = AuthInterceptor(settings, baseUrl)
         Retrofit.Builder()
             .baseUrl(baseUrl)
-            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(settings)).build())
+            .client(OkHttpClient.Builder().cookieJar(authInterceptor).addInterceptor(authInterceptor).build())
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(ApiService::class.java)
