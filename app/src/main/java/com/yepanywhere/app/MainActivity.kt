@@ -15,13 +15,18 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.yepanywhere.app.data.SettingsStore
+import com.yepanywhere.app.data.remote.AuthInterceptor
+import com.yepanywhere.app.data.remote.ApiService
 import com.yepanywhere.app.navigation.AppNavGraph
 import com.yepanywhere.app.navigation.Routes
 import com.yepanywhere.app.ui.theme.YepAnywhereTheme
-import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val settings = (application as YepApplication).settingsStore
 
         setContent {
-            val darkModePref by settings.darkMode.collectAsState(initial = 0)
+            val darkModePref by settings.darkMode.collectAsStateWithLifecycle(initialValue = 0)
             val systemDark = isSystemInDarkTheme()
             val isDark = when (darkModePref) {
                 0 -> systemDark
@@ -41,7 +46,7 @@ class MainActivity : ComponentActivity() {
             }
 
             YepAnywhereTheme(darkTheme = isDark) {
-                MainScreen()
+                MainScreen(settings)
             }
         }
     }
@@ -55,10 +60,23 @@ data class TabItem(
 )
 
 @Composable
-fun MainScreen() {
+fun MainScreen(settings: SettingsStore) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
+
+    val serverUrl by settings.serverUrl.collectAsStateWithLifecycle(initialValue = "")
+
+    val api = remember(serverUrl) {
+        if (serverUrl.isBlank()) return@remember null
+        val baseUrl = if (serverUrl.endsWith("/")) serverUrl else "$serverUrl/"
+        Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(OkHttpClient.Builder().addInterceptor(AuthInterceptor(settings)).build())
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(ApiService::class.java)
+    }
 
     val tabs = listOf(
         TabItem(Routes.INBOX, "会话", Icons.Filled.ChatBubble, Icons.Outlined.ChatBubble),
@@ -98,6 +116,19 @@ fun MainScreen() {
             }
         }
     ) { padding ->
-        AppNavGraph(navController = navController)
+        if (api != null) {
+            AppNavGraph(
+                navController = navController,
+                api = api,
+                settingsStore = settings
+            )
+        } else {
+            // Not configured yet — show settings directly
+            com.yepanywhere.app.ui.screens.settings.SettingsScreen(
+                viewModel = androidx.lifecycle.viewmodel.compose.viewModel {
+                    com.yepanywhere.app.ui.screens.settings.SettingsViewModel(settings)
+                }
+            )
+        }
     }
 }
