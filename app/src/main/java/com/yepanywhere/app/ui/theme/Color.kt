@@ -2,27 +2,42 @@ package com.yepanywhere.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// HyperOS-inspired palette
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+// Light mode
+val Label = Color(0xFF000000)
+val Label2 = Color(0x993C3C43)
+val Label3 = Color(0x4D3C3C43)
+val Background = Color(0xFFF2F2F7)
+val Surface = Color(0xFFFFFFFF)
+val Separator = Color(0x1F3C3C43)
+val Fill = Color(0x1F787880)
+val Fill2 = Color(0x14787880)
+val Tint = Color(0xFF007AFF)
+val Green = Color(0xFF34C759)
+val Red = Color(0xFFFF3B30)
+val Orange = Color(0xFFFF9500)
+val Purple = Color(0xFFAF52DE)
 
-val Purple40 = Color(0xFF6650A4)
-val PurpleGrey40 = Color(0xFF625B71)
-val Pink40 = Color(0xFF7D5260)
+// Dark mode
+val DarkLabel = Color(0xFFFFFFFF)
+val DarkLabel2 = Color(0x99EBEBF5)
+val DarkLabel3 = Color(0x4DEBEBF5)
+val DarkBackground = Color(0xFF000000)
+val DarkSurface = Color(0xFF1C1C1E)
+val DarkSeparator = Color(0x5C545458)
+val DarkFill = Color(0x3D787880)
+val DarkFill2 = Color(0x29787880)
+val DarkTint = Color(0xFF0A84FF)
+val DarkGreen = Color(0xFF30D158)
+val DarkRed = Color(0xFFFF453A)
+val DarkOrange = Color(0xFFFF9F0A)
+val DarkPurple = Color(0xFFBF5AF2)
 
-// Yep Anywhere brand gradient: #667EEA → #764BA2
-val GradientStart = Color(0xFF667EEA)
-val GradientEnd = Color(0xFF764BA2)
-val GradientStartLight = Color(0xFF8BA3FF)
-val GradientEndLight = Color(0xFF9B6BC4)
+// Bubble
+val BubbleIncomingLight = Color(0xFFE9E9EB)
+val BubbleOutgoingLight = Color(0xFF007AFF)
+val BubbleIncomingDark = Color(0x1AFFFFFF)
+val BubbleOutgoingDark = Color(0xFF0A84FF)
 
-val SurfaceLight = Color(0xFFF8F9FE)
-val SurfaceDark = Color(0xFF1A1A2E)
-val CardLight = Color(0xFFFFFFFF)
-val CardDark = Color(0xFF25253D)
-val TextPrimary = Color(0xFF1A1A2E)
-val TextSecondary = Color(0xFF888888)
-val TextOnGradient = Color(0xFFFFFFFF)
-val ErrorRed = Color(0xFFE53935)
-val SuccessGreen = Color(0xFF4CAF50)
+// Frosted glass
+val GlassLight = Color(0xF2F2F7).copy(alpha = 0.94f)
+val GlassDark = Color(0x1C1C1E).copy(alpha = 0.94f)
