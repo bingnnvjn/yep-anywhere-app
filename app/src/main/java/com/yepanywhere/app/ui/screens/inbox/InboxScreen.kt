@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.data.model.AgentActivity
 import com.yepanywhere.app.data.model.InboxItem
 import com.yepanywhere.app.data.remote.ApiService
@@ -31,9 +31,9 @@ fun InboxScreen(
     api: ApiService,
     onSessionClick: (projectId: String, sessionId: String, sessionTitle: String) -> Unit
 ) {
-    val items by viewModel.items.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
-    val error by viewModel.error.collectAsStateWithLifecycle()
+    val items by viewModel.items.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
 
     var selectedFilter by remember { mutableStateOf(InboxFilter.ALL) }
     var searchQuery by remember { mutableStateOf("") }

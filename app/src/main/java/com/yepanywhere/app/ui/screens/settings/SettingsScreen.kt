@@ -17,14 +17,14 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.ui.theme.*
 
 @Composable
 fun SettingsScreen(viewModel: SettingsViewModel) {
-    val serverUrl by viewModel.serverUrl.collectAsStateWithLifecycle()
-    val password by viewModel.password.collectAsStateWithLifecycle()
-    val darkMode by viewModel.darkMode.collectAsStateWithLifecycle()
+    val serverUrl by viewModel.serverUrl.collectAsState()
+    val password by viewModel.password.collectAsState()
+    val darkMode by viewModel.darkMode.collectAsState()
 
     var editUrl by remember(serverUrl) { mutableStateOf(serverUrl) }
     var editPassword by remember(password) { mutableStateOf(password) }

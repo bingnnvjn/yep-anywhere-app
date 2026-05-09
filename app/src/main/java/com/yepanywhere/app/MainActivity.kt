@@ -15,7 +15,7 @@ import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.yepanywhere.app.data.SettingsStore
@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val settings = (application as YepApplication).settingsStore
 
         setContent {
-            val darkModePref by settings.darkMode.collectAsStateWithLifecycle(initialValue = 0)
+            val darkModePref by settings.darkMode.collectAsState(initialValue = 0)
             val systemDark = isSystemInDarkTheme()
             val isDark = when (darkModePref) {
                 0 -> systemDark
@@ -65,7 +65,7 @@ fun MainScreen(settings: SettingsStore) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val serverUrl by settings.serverUrl.collectAsStateWithLifecycle(initialValue = "")
+    val serverUrl by settings.serverUrl.collectAsState(initialValue = "")
 
     val api = remember(serverUrl) {
         if (serverUrl.isBlank()) return@remember null

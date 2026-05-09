@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.data.model.FileEntry
 import com.yepanywhere.app.data.remote.ApiService
 import com.yepanywhere.app.ui.components.FileRow
@@ -31,9 +31,9 @@ fun FilesScreen(
     projectName: String,
     onBack: () -> Unit
 ) {
-    val files by viewModel.files.collectAsStateWithLifecycle()
-    val currentPath by viewModel.currentPath.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val files by viewModel.files.collectAsState()
+    val currentPath by viewModel.currentPath.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Breadcrumb path segments
     val pathSegments = remember(currentPath) {

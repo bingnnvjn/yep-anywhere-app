@@ -19,7 +19,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.data.model.Message
 import com.yepanywhere.app.data.model.MessageRole
 import com.yepanywhere.app.data.remote.ApiService
@@ -36,8 +36,8 @@ fun ChatScreen(
     sessionTitle: String,
     onBack: () -> Unit
 ) {
-    val messages by viewModel.messages.collectAsStateWithLifecycle()
-    val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
+    val messages by viewModel.messages.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
 
