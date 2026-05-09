@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
         val settings = (application as YepApplication).settingsStore
 
         setContent {
-            val darkModePref by settings.darkMode.collectAsState(initialValue = 0)
+            val darkModePref by settings.darkMode.collectAsState(initial =0)
             val systemDark = isSystemInDarkTheme()
             val isDark = when (darkModePref) {
                 0 -> systemDark
@@ -65,7 +65,7 @@ fun MainScreen(settings: SettingsStore) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val serverUrl by settings.serverUrl.collectAsState(initialValue = "")
+    val serverUrl by settings.serverUrl.collectAsState(initial ="")
 
     val api = remember(serverUrl) {
         if (serverUrl.isBlank()) return@remember null
