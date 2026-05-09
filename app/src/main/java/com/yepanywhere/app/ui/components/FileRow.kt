@@ -20,13 +20,18 @@ import com.yepanywhere.app.data.model.FileStatus
 import com.yepanywhere.app.ui.theme.*
 
 @Composable
-fun FileRow(entry: FileEntry, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun FileRow(
+    entry: FileEntry,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val nameColor = when (entry.status) {
         FileStatus.NEW -> Green
         FileStatus.DELETED -> Red
         else -> MaterialTheme.colorScheme.onSurface
     }
     val textDecoration = if (entry.status == FileStatus.DELETED) TextDecoration.LineThrough else null
+
     val badgeColor = when (entry.status) {
         FileStatus.NEW -> Green
         FileStatus.MODIFIED -> Orange
@@ -47,23 +52,50 @@ fun FileRow(entry: FileEntry, onClick: () -> Unit, modifier: Modifier = Modifier
     }
 
     Row(
-        modifier = modifier.fillMaxWidth().background(bgColor).clickable { onClick() }
+        modifier = modifier
+            .fillMaxWidth()
+            .background(bgColor)
+            .clickable { onClick() }
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        Text(if (entry.isDirectory) "📁" else "📄", fontSize = 20.sp, modifier = Modifier.width(28.dp))
+        // File/folder icon
         Text(
-            text = entry.name, style = YepType.body, color = nameColor,
-            textDecoration = textDecoration, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            if (entry.isDirectory) "📁" else "📄",
+            fontSize = 20.sp,
+            modifier = Modifier.width(28.dp)
+        )
+
+        // File name
+        Text(
+            text = entry.name,
+            style = YepType.body,
+            color = nameColor,
+            textDecoration = textDecoration,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
         )
+
+        // Status badge
         if (badgeText != null && badgeColor != null) {
             Box(
-                modifier = Modifier.clip(RoundedCornerShape(5.dp)).background(badgeColor).padding(horizontal = 7.dp, vertical = 2.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(badgeColor)
+                    .padding(horizontal = 7.dp, vertical = 2.dp),
                 contentAlignment = Alignment.Center
-            ) { Text(badgeText, color = Color.White, fontSize = 11.sp) }
+            ) {
+                Text(badgeText, color = Color.White, fontSize = 11.sp)
+            }
         }
-        Text("›", color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f), fontSize = 14.sp)
+
+        // Chevron
+        Text(
+            "›",
+            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+            fontSize = 14.sp
+        )
     }
 }

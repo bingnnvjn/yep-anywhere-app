@@ -8,7 +8,6 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,39 +52,79 @@ fun SessionCard(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Avatar
         Box(
-            modifier = Modifier.size(50.dp).clip(CircleShape).background(avatarColor),
+            modifier = Modifier
+                .size(50.dp)
+                .clip(CircleShape)
+                .background(avatarColor),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = item.sessionTitle.firstOrNull()?.uppercase() ?: "?",
-                color = Color.White, fontSize = YepType.headline.fontSize, fontWeight = FontWeight.SemiBold
+                color = Color.White,
+                fontSize = YepType.headline.fontSize,
+                fontWeight = FontWeight.SemiBold
             )
+            // Online indicator
             if (isRunning) {
                 Box(
-                    modifier = Modifier.align(Alignment.BottomEnd).size(14.dp)
-                        .clip(CircleShape).background(Green)
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .size(14.dp)
+                        .clip(CircleShape)
+                        .background(Green)
                 )
             }
         }
 
+        // Content
         Column(modifier = Modifier.weight(1f)) {
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(text = item.sessionTitle, style = YepType.headline, maxLines = 1, modifier = Modifier.weight(1f))
-                Text(text = item.updatedAt.takeLast(5), style = YepType.subheadline, color = MaterialTheme.colorScheme.outline)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = item.sessionTitle,
+                    style = YepType.headline,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
+                )
+                Text(
+                    text = item.updatedAt.takeLast(5),
+                    style = YepType.subheadline,
+                    color = MaterialTheme.colorScheme.outline
+                )
             }
             Spacer(Modifier.height(2.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 val previewColor = if (needsAttention) Red else MaterialTheme.colorScheme.outline
                 Text(
                     text = if (needsAttention) "需要审批" else item.projectName,
-                    style = YepType.subheadline, color = previewColor, maxLines = 1, modifier = Modifier.weight(1f)
+                    style = YepType.subheadline,
+                    color = previewColor,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f)
                 )
                 if (needsAttention) {
                     Box(
-                        modifier = Modifier.clip(RoundedCornerShape(11.dp)).background(Red).padding(horizontal = 6.dp, vertical = 2.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(11.dp))
+                            .background(Red)
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
                         contentAlignment = Alignment.Center
-                    ) { Text("1", color = Color.White, style = YepType.footnote, fontWeight = FontWeight.SemiBold) }
+                    ) {
+                        Text(
+                            "1",
+                            color = Color.White,
+                            style = YepType.footnote,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
