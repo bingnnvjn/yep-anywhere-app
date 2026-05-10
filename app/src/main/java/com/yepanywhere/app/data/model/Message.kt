@@ -46,3 +46,13 @@ data class ContentBlock(
     val content: Any? = null,
     val isError: Boolean = false,
 )
+
+data class PendingInput(
+    val id: String = "",
+    val sessionId: String = "",
+    val type: String = "",
+    val prompt: String = "",
+    val toolName: String = "",
+    val toolInput: Any? = null,
+    val timestamp: String = ""
+)
