@@ -46,7 +46,7 @@ fun extractMessageText(content: Any?): String {
                 is String -> block
                 else -> null
             }
-        }.joinToString("\n").ifBlank { null }
+        }.joinToString("\n")
         is Map<*, *> -> {
             val type = c["type"] as? String
             when (type) {

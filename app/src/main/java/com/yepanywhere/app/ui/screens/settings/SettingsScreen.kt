@@ -22,7 +22,7 @@ import com.yepanywhere.app.data.remote.ApiService
 import com.yepanywhere.app.ui.theme.*
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService) {
+fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService? = null) {
     val serverUrl by viewModel.serverUrl.collectAsState()
     val password by viewModel.password.collectAsState()
     val darkMode by viewModel.darkMode.collectAsState()
@@ -34,7 +34,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService) {
     var showPassword by remember { mutableStateOf(false) }
 
     LaunchedEffect(serverUrl) {
-        if (serverUrl.isNotBlank()) {
+        if (serverUrl.isNotBlank() && api != null) {
             viewModel.loadServerStatus(api)
         }
     }
@@ -93,7 +93,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService) {
         }
 
         // Yep 服务器 Section
-        SettingsSection(title = "YE ANYWHERE 服务器") {
+        if (api != null) SettingsSection(title = "YE ANYWHERE 服务器") {
             if (statusLoading) {
                 Box(
                     modifier = Modifier
