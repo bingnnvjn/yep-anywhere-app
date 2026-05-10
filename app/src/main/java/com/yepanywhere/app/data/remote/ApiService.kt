@@ -36,6 +36,13 @@ interface ApiService {
         @Body body: Map<String, String>
     ): Response<Unit>
 
+    @POST("/api/projects/{projectId}/sessions/{sessionId}/resume")
+    suspend fun resumeSession(
+        @Path("projectId") projectId: String,
+        @Path("sessionId") sessionId: String,
+        @Body body: Map<String, String>
+    ): Response<Unit>
+
     @POST("/api/sessions/{sessionId}/input")
     suspend fun submitInput(
         @Path("sessionId") sessionId: String,

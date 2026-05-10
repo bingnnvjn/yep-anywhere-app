@@ -40,7 +40,18 @@ class ChatViewModel : ViewModel() {
     fun sendMessage(api: ApiService, sessionId: String, text: String) {
         viewModelScope.launch {
             try {
-                api.sendMessage(sessionId, mapOf("message" to text))
+                val body = mapOf("message" to text)
+                var response = api.sendMessage(sessionId, body)
+                if (!response.isSuccessful) {
+                    Log.w("ChatViewModel", "sendMessage ${response.code()}, trying resume")
+                    val pid = savedProjectId
+                    if (pid != null) {
+                        response = api.resumeSession(pid, sessionId, body)
+                    }
+                }
+                if (!response.isSuccessful) {
+                    Log.e("ChatViewModel", "Send failed: ${response.code()} ${response.errorBody()?.string()}")
+                }
                 // Reload messages after sending
                 val pid = savedProjectId
                 if (pid != null) {
