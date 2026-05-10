@@ -7,10 +7,10 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 import okhttp3.Interceptor
-import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Request
 import okhttp3.Response
 
 class AuthInterceptor(
@@ -19,34 +19,29 @@ class AuthInterceptor(
 ) : Interceptor, CookieJar {
 
     private val cookieStore = mutableMapOf<String, List<Cookie>>()
-    private var isLoggedIn = false
     private var loginAttempted = false
 
     override fun intercept(chain: Interceptor.Chain): Response {
+        val originalRequest = chain.request()
+
         // Add required header to all requests
-        val request = chain.request().newBuilder()
+        val request = originalRequest.newBuilder()
             .header("X-Yep-Anywhere", "true")
-            .header("Content-Type", "application/json")
             .build()
 
         val response = chain.proceed(request)
 
-        // If 401 and haven't tried login yet, try to login
+        // If 401 and haven't tried login yet, try to login then retry
         if (response.code == 401 && !loginAttempted) {
-            response.close()
             loginAttempted = true
             val password = runBlocking { settingsStore.password.first() }
-            if (password.isNotBlank()) {
-                val loginSuccess = login(password)
-                if (loginSuccess) {
-                    isLoggedIn = true
-                    // Retry original request with cookies
-                    val retryRequest = chain.request().newBuilder()
-                        .header("X-Yep-Anywhere", "true")
-                        .header("Content-Type", "application/json")
-                        .build()
-                    return chain.proceed(retryRequest)
-                }
+            if (password.isNotBlank() && login(password)) {
+                // Login succeeded, retry original request
+                response.close()
+                val retryRequest = originalRequest.newBuilder()
+                    .header("X-Yep-Anywhere", "true")
+                    .build()
+                return chain.proceed(retryRequest)
             }
         }
 
@@ -58,7 +53,7 @@ class AuthInterceptor(
             .cookieJar(this)
             .build()
 
-        val body = """{"password":"$password"}""".toRequestBody("application/json".toMediaType())
+        val body = """{"password":"$password"}""".toRequestBody("application/json".toMediaTypeOrNull()!!)
         val request = Request.Builder()
             .url("${baseUrl}api/auth/login")
             .header("X-Yep-Anywhere", "true")
