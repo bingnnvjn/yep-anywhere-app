@@ -23,9 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.yepanywhere.app.data.model.PendingInput
-import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.data.model.Message
-import com.yepanywhere.app.data.model.MessageRole
 import com.yepanywhere.app.data.remote.ApiService
 import com.yepanywhere.app.ui.components.MessageBubble
 import com.yepanywhere.app.ui.theme.*
@@ -259,8 +257,9 @@ fun ChatScreen(
 
         // Permission approval sheet
         if (pendingInput != null) {
+            val currentInput = pendingInput!!
             ModalBottomSheet(
-                onDismissRequest = { /* Don't allow dismiss by tapping outside */ },
+                onDismissRequest = { /* Sheet auto-dismisses on swipe/back; visibility controlled by pendingInput state */ },
                 sheetState = sheetState
             ) {
                 Column(
@@ -274,7 +273,7 @@ fun ChatScreen(
                         horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            when (pendingInput?.toolName) {
+                            when (currentInput.toolName) {
                                 "Bash" -> "⚙️"
                                 "Edit", "Write" -> "📝"
                                 else -> "🔧"
@@ -283,12 +282,12 @@ fun ChatScreen(
                         )
                         Column {
                             Text(
-                                pendingInput?.toolName ?: "",
+                                currentInput.toolName,
                                 style = YepType.headline,
                                 fontWeight = FontWeight.SemiBold
                             )
                             Text(
-                                when (pendingInput?.toolName) {
+                                when (currentInput.toolName) {
                                     "Bash" -> "命令执行"
                                     "Edit" -> "文件编辑"
                                     "Write" -> "文件写入"
@@ -303,9 +302,9 @@ fun ChatScreen(
                     Spacer(Modifier.height(12.dp))
 
                     // Tool input content
-                    val toolInputText = when (val input = pendingInput?.toolInput) {
+                    val toolInputText = when (val input = currentInput.toolInput) {
                         is Map<*, *> -> {
-                            when (pendingInput?.toolName) {
+                            when (currentInput.toolName) {
                                 "Bash" -> input["command"] as? String ?: input.toString()
                                 "Edit" -> {
                                     val filePath = input["file_path"] as? String ?: ""
@@ -315,7 +314,7 @@ fun ChatScreen(
                             }
                         }
                         is String -> input
-                        else -> pendingInput?.prompt ?: ""
+                        else -> currentInput.prompt
                     }
 
                     Box(
@@ -334,7 +333,7 @@ fun ChatScreen(
                     }
 
                     // File path if available
-                    val filePath = (pendingInput?.toolInput as? Map<*, *>)?.get("file_path") as? String
+                    val filePath = (currentInput.toolInput as? Map<*, *>)?.get("file_path") as? String
                     if (filePath != null) {
                         Spacer(Modifier.height(8.dp))
                         Text(
