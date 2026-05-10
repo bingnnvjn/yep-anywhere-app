@@ -33,7 +33,7 @@ fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService? = null) {
     var editPassword by remember(password) { mutableStateOf(password) }
     var showPassword by remember { mutableStateOf(false) }
 
-    LaunchedEffect(serverUrl) {
+    LaunchedEffect(Unit) {
         if (serverUrl.isNotBlank() && api != null) {
             viewModel.loadServerStatus(api)
         }
@@ -112,12 +112,6 @@ fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService? = null) {
                 SettingsRow(
                     label = "版本",
                     value = (status["version"] as? String) ?: "未知"
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f), modifier = Modifier.padding(start = 52.dp))
-                val projects = status["projects"] as? List<*>
-                SettingsRow(
-                    label = "项目数",
-                    value = "${projects?.size ?: 0}"
                 )
                 HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f), modifier = Modifier.padding(start = 52.dp))
                 val authStatus = status["auth"] as? Map<*, *>

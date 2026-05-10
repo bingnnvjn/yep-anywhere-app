@@ -6,13 +6,13 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    @POST("/auth/login")
+    @POST("/api/auth/login")
     suspend fun login(@Body body: Map<String, String>): Response<Unit>
 
-    @POST("/auth/logout")
+    @POST("/api/auth/logout")
     suspend fun logout(): Response<Unit>
 
-    @GET("/auth/status")
+    @GET("/api/auth/status")
     suspend fun getAuthStatus(): Map<String, Any>
 
     @GET("/api/inbox")
@@ -75,6 +75,6 @@ interface ApiService {
         @Path("projectId") projectId: String
     ): Map<String, Any>
 
-    @GET("/api/status")
-    suspend fun getServerStatus(): Map<String, Any>
+    @GET("/api/version")
+    suspend fun getServerVersion(): Map<String, Any>
 }

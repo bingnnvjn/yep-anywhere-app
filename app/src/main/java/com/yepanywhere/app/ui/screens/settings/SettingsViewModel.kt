@@ -32,7 +32,9 @@ class SettingsViewModel(private val settings: SettingsStore) : ViewModel() {
         viewModelScope.launch {
             _statusLoading.value = true
             try {
-                _serverStatus.value = api.getServerStatus()
+                val version = api.getServerVersion()
+                val auth = try { api.getAuthStatus() } catch (_: Exception) { null }
+                _serverStatus.value = version + mapOf("auth" to (auth ?: emptyMap<String, Any>()))
             } catch (e: Exception) {
                 _serverStatus.value = null
             } finally {
