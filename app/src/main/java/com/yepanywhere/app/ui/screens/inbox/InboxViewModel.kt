@@ -77,8 +77,9 @@ class InboxViewModel : ViewModel() {
     fun createSession(api: ApiService, projectId: String, title: String, onResult: (String, String, String) -> Unit) {
         viewModelScope.launch {
             try {
-                val session = api.createSession(projectId, mapOf("title" to title))
-                onResult(session.projectId, session.id, session.title ?: title)
+                val result = api.createSessionOnly(projectId)
+                val sessionId = result["sessionId"] as? String ?: return@launch
+                onResult(projectId, sessionId, title)
             } catch (e: Exception) {
                 _error.value = "创建会话失败: ${e.message}"
             }

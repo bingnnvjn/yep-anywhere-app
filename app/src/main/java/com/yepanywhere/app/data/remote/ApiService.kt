@@ -65,6 +65,12 @@ interface ApiService {
         @Body body: Map<String, String>
     ): Session
 
+    @POST("/api/projects/{projectId}/sessions/create")
+    suspend fun createSessionOnly(
+        @Path("projectId") projectId: String,
+        @Body body: Map<String, String> = emptyMap()
+    ): Map<String, Any>
+
     @GET("/api/projects/{projectId}/files")
     suspend fun getFiles(
         @Path("projectId") projectId: String,
