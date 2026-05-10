@@ -14,9 +14,64 @@ import com.yepanywhere.app.data.model.Message
 import com.yepanywhere.app.data.model.MessageRole
 import com.yepanywhere.app.ui.theme.*
 
+/**
+ * Extract displayable text from message content.
+ * API returns content as one of:
+ * - String
+ * - List of content blocks: [{"type":"text","text":"hello"}, ...]
+ * - Single content block: {"type":"text","text":"hello"}
+ * - null
+ */
+fun extractMessageText(content: Any?): String {
+    return when (val c = content) {
+        is String -> c
+        is List<*> -> c.mapNotNull { block ->
+            when (block) {
+                is Map<*, *> -> {
+                    val type = block["type"] as? String
+                    when (type) {
+                        "text" -> block["text"] as? String
+                        "tool_use" -> {
+                            val name = block["name"] as? String ?: "tool"
+                            "[调用工具: $name]"
+                        }
+                        "tool_result" -> {
+                            // tool_result content can be string or list of blocks
+                            val inner = block["content"]
+                            extractMessageText(inner)
+                        }
+                        else -> block["text"] as? String
+                    }
+                }
+                is String -> block
+                else -> null
+            }
+        }.joinToString("\n").ifBlank { null }
+        is Map<*, *> -> {
+            val type = c["type"] as? String
+            when (type) {
+                "text" -> c["text"] as? String ?: ""
+                "tool_use" -> {
+                    val name = c["name"] as? String ?: "tool"
+                    "[调用工具: $name]"
+                }
+                "tool_result" -> extractMessageText(c["content"])
+                else -> c["text"] as? String ?: c.toString()
+            }
+        }
+        null -> ""
+        else -> c.toString()
+    }.trim()
+}
+
 @Composable
 fun MessageBubble(message: Message, modifier: Modifier = Modifier) {
     val isOutgoing = message.role == MessageRole.USER
+    val text = extractMessageText(message.content)
+
+    // Don't render empty bubbles
+    if (text.isBlank() && !message.isStreaming) return
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
@@ -29,17 +84,8 @@ fun MessageBubble(message: Message, modifier: Modifier = Modifier) {
         val bgColor = if (isOutgoing) BubbleOutgoingLight else BubbleIncomingLight
         val textColor = if (isOutgoing) Color.White else MaterialTheme.colorScheme.onSurface
 
-        val text = when (val c = message.content) {
-            is String -> c
-            is List<*> -> c.filterIsInstance<Map<*, *>>()
-                .mapNotNull { it["text"] as? String }
-                .joinToString("")
-            null -> ""
-            else -> c.toString()
-        }
-
         Text(
-            text = text,
+            text = text.ifBlank { "…" },
             modifier = Modifier
                 .widthIn(max = 280.dp)
                 .clip(shape)

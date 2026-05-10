@@ -79,7 +79,7 @@ fun AppNavGraph(
         }
         composable(Routes.SETTINGS) {
             val vm: SettingsViewModel = viewModel { SettingsViewModel(settingsStore) }
-            SettingsScreen(viewModel = vm)
+            SettingsScreen(viewModel = vm, api = api)
         }
     }
 }

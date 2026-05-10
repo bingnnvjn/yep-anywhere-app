@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: debug.keystore
-          key: debug-keystore-v3
+          key: debug-keystore-v4
 
       - name: Generate Debug Keystore
         run: |
@@ -44,7 +44,7 @@ jobs:
           fi
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon -Pandroid.injected.signing.store.file=$PWD/debug.keystore -Pandroid.injected.signing.store.password=android -Pandroid.injected.signing.key.alias=androiddebugkey -Pandroid.injected.signing.key.password=android
+        run: ./gradlew assembleDebug --no-daemon -Pandroid.injected.signing.store.file=../debug.keystore -Pandroid.injected.signing.store.password=android -Pandroid.injected.signing.key.alias=androiddebugkey -Pandroid.injected.signing.key.password=android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4

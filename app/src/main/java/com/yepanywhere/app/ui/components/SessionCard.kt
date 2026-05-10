@@ -1,8 +1,10 @@
 package com.yepanywhere.app.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
@@ -25,10 +27,12 @@ import com.yepanywhere.app.data.model.AgentActivity
 import com.yepanywhere.app.data.model.InboxItem
 import com.yepanywhere.app.ui.theme.*
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SessionCard(
     item: InboxItem,
     onClick: () -> Unit,
+    onLongClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -48,7 +52,12 @@ fun SessionCard(
         modifier = modifier
             .scale(scale)
             .fillMaxWidth()
-            .clickable(interactionSource = interactionSource, indication = null) { onClick() }
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp)

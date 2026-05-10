@@ -40,6 +40,7 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    var showMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(projectId, sessionId) {
         viewModel.loadSession(api, projectId, sessionId)
@@ -87,8 +88,36 @@ fun ChatScreen(
                 }
             },
             actions = {
-                IconButton(onClick = { /* TODO: more options */ }) {
-                    Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                Box {
+                    IconButton(onClick = { showMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "更多")
+                    }
+                    DropdownMenu(
+                        expanded = showMenu,
+                        onDismissRequest = { showMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("刷新") },
+                            onClick = {
+                                showMenu = false
+                                viewModel.loadSession(api, projectId, sessionId)
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("复制会话ID") },
+                            onClick = {
+                                showMenu = false
+                                // TODO: clipboard copy
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("查看项目文件") },
+                            onClick = {
+                                showMenu = false
+                                // TODO: navigate to files
+                            }
+                        )
+                    }
                 }
             },
             colors = TopAppBarDefaults.topAppBarColors(

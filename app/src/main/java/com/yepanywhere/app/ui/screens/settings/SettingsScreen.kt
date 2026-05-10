@@ -18,17 +18,26 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
+import com.yepanywhere.app.data.remote.ApiService
 import com.yepanywhere.app.ui.theme.*
 
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
+fun SettingsScreen(viewModel: SettingsViewModel, api: ApiService) {
     val serverUrl by viewModel.serverUrl.collectAsState()
     val password by viewModel.password.collectAsState()
     val darkMode by viewModel.darkMode.collectAsState()
+    val serverStatus by viewModel.serverStatus.collectAsState()
+    val statusLoading by viewModel.statusLoading.collectAsState()
 
     var editUrl by remember(serverUrl) { mutableStateOf(serverUrl) }
     var editPassword by remember(password) { mutableStateOf(password) }
     var showPassword by remember { mutableStateOf(false) }
+
+    LaunchedEffect(serverUrl) {
+        if (serverUrl.isNotBlank()) {
+            viewModel.loadServerStatus(api)
+        }
+    }
 
     Column(
         modifier = Modifier
@@ -81,6 +90,63 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                 Text("保存连接设置", style = YepType.body)
             }
             Spacer(Modifier.height(4.dp))
+        }
+
+        // Yep 服务器 Section
+        SettingsSection(title = "YE ANYWHERE 服务器") {
+            if (statusLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp,
+                        color = Tint
+                    )
+                }
+            } else if (serverStatus != null) {
+                val status = serverStatus!!
+                SettingsRow(
+                    label = "版本",
+                    value = (status["version"] as? String) ?: "未知"
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f), modifier = Modifier.padding(start = 52.dp))
+                val projects = status["projects"] as? List<*>
+                SettingsRow(
+                    label = "项目数",
+                    value = "${projects?.size ?: 0}"
+                )
+                HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.12f), modifier = Modifier.padding(start = 52.dp))
+                val authStatus = status["auth"] as? Map<*, *>
+                val authEnabled = authStatus?.get("enabled") as? Boolean ?: false
+                SettingsRow(
+                    label = "访问密码",
+                    value = if (authEnabled) "已启用" else "未启用",
+                    valueColor = if (authEnabled) Green else MaterialTheme.colorScheme.outline
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { viewModel.loadServerStatus(api) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Tint)
+                ) {
+                    Text("刷新状态", style = YepType.body)
+                }
+                Spacer(Modifier.height(4.dp))
+            } else {
+                SettingsRow(
+                    label = "状态",
+                    value = "无法连接",
+                    valueColor = Red
+                )
+                Spacer(Modifier.height(4.dp))
+            }
         }
 
         // 外观 Section
