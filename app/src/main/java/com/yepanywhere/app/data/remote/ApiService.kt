@@ -30,6 +30,12 @@ interface ApiService {
         @Path("sessionId") sessionId: String
     ): SessionDetail
 
+    @GET("/api/projects/{projectId}/sessions/{sessionId}/metadata")
+    suspend fun getSessionMetadata(
+        @Path("projectId") projectId: String,
+        @Path("sessionId") sessionId: String
+    ): Map<String, Any>
+
     @POST("/api/sessions/{sessionId}/messages")
     suspend fun sendMessage(
         @Path("sessionId") sessionId: String,

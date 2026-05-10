@@ -4,11 +4,16 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yepanywhere.app.data.model.Message
+import com.yepanywhere.app.data.model.MessageBody
 import com.yepanywhere.app.data.remote.ApiService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+
+enum class AgentStatus {
+    IDLE, THINKING, WAITING_INPUT
+}
 
 class ChatViewModel : ViewModel() {
 
@@ -18,8 +23,8 @@ class ChatViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    private val _isWaitingReply = MutableStateFlow(false)
-    val isWaitingReply: StateFlow<Boolean> = _isWaitingReply
+    private val _agentStatus = MutableStateFlow(AgentStatus.IDLE)
+    val agentStatus: StateFlow<AgentStatus> = _agentStatus
 
     private var savedApi: ApiService? = null
     private var savedProjectId: String? = null
@@ -47,6 +52,15 @@ class ChatViewModel : ViewModel() {
         pollJob?.cancel()
         viewModelScope.launch {
             try {
+                // Add user message locally immediately
+                val localMsg = Message(
+                    id = "local-${System.currentTimeMillis()}",
+                    type = "user",
+                    message = MessageBody(role = "user", content = text),
+                    timestamp = java.time.Instant.now().toString()
+                )
+                _messages.value = _messages.value + localMsg
+
                 val body = mapOf("message" to text)
                 var response = api.sendMessage(sessionId, body)
                 if (!response.isSuccessful) {
@@ -60,9 +74,8 @@ class ChatViewModel : ViewModel() {
                     Log.e("ChatViewModel", "Send failed: ${response.code()} ${response.errorBody()?.string()}")
                     return@launch
                 }
-                // Reload once immediately
-                refreshMessages()
                 // Start polling for Claude's reply
+                _agentStatus.value = AgentStatus.THINKING
                 startPolling()
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to send message", e)
@@ -72,22 +85,41 @@ class ChatViewModel : ViewModel() {
 
     private fun startPolling() {
         pollJob = viewModelScope.launch {
-            _isWaitingReply.value = true
             val maxAttempts = 60 // 3 min max
             for (i in 1..maxAttempts) {
                 delay(3000)
                 try {
                     refreshMessages()
+                    checkAgentStatus()
                     val msgs = _messages.value
                     if (msgs.isNotEmpty() && msgs.last().role != com.yepanywhere.app.data.model.MessageRole.USER) {
-                        // Got a reply
+                        _agentStatus.value = AgentStatus.IDLE
                         break
                     }
                 } catch (e: Exception) {
                     Log.e("ChatViewModel", "Poll error", e)
                 }
             }
-            _isWaitingReply.value = false
+            _agentStatus.value = AgentStatus.IDLE
+        }
+    }
+
+    private suspend fun checkAgentStatus() {
+        try {
+            val api = savedApi ?: return
+            val pid = savedProjectId ?: return
+            val sid = savedSessionId ?: return
+            val metadata = api.getSessionMetadata(pid, sid)
+            @Suppress("UNCHECKED_CAST")
+            val ownership = metadata["ownership"] as? Map<String, Any> ?: return
+            val state = ownership["state"] as? String
+            _agentStatus.value = when (state) {
+                "in_turn" -> AgentStatus.THINKING
+                "waiting-input" -> AgentStatus.WAITING_INPUT
+                else -> AgentStatus.IDLE
+            }
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Failed to check status", e)
         }
     }
 

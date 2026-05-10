@@ -38,7 +38,7 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
-    val isWaitingReply by viewModel.isWaitingReply.collectAsState()
+    val agentStatus by viewModel.agentStatus.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
@@ -173,14 +173,19 @@ fun ChatScreen(
                     items(messages, key = { it.id }) { message ->
                         MessageBubble(message = message)
                     }
-                    if (isWaitingReply) {
+                    if (agentStatus != AgentStatus.IDLE) {
                         item {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 horizontalArrangement = Arrangement.Start
                             ) {
+                                val statusText = when (agentStatus) {
+                                    AgentStatus.THINKING -> "Claude 正在思考..."
+                                    AgentStatus.WAITING_INPUT -> "Claude 等待输入"
+                                    AgentStatus.IDLE -> ""
+                                }
                                 Text(
-                                    "Claude 正在思考...",
+                                    statusText,
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(20.dp, 20.dp, 20.dp, 5.dp))
                                         .background(BubbleIncomingLight)
