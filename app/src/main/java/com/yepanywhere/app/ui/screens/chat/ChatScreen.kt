@@ -38,6 +38,7 @@ fun ChatScreen(
 ) {
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val isWaitingReply by viewModel.isWaitingReply.collectAsState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
@@ -171,6 +172,24 @@ fun ChatScreen(
                 ) {
                     items(messages, key = { it.id }) { message ->
                         MessageBubble(message = message)
+                    }
+                    if (isWaitingReply) {
+                        item {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Start
+                            ) {
+                                Text(
+                                    "Claude 正在思考...",
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(20.dp, 20.dp, 20.dp, 5.dp))
+                                        .background(BubbleIncomingLight)
+                                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                                    color = MaterialTheme.colorScheme.outline,
+                                    style = YepType.body
+                                )
+                            }
+                        }
                     }
                 }
             }
