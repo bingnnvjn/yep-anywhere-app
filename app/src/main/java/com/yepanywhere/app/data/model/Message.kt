@@ -3,19 +3,38 @@ package com.yepanywhere.app.data.model
 import com.google.gson.annotations.SerializedName
 
 data class Message(
-    val id: String,
-    val role: MessageRole = MessageRole.ASSISTANT,
-    val content: Any? = null,
+    @SerializedName("uuid")
+    val id: String = "",
+    val type: String = "",
+    val message: MessageBody? = null,
     val timestamp: String = "",
-    @SerializedName("isStreaming")
-    val isStreaming: Boolean = false,
+) {
+    val role: MessageRole
+        get() = when (message?.role) {
+            "user" -> MessageRole.USER
+            "assistant" -> MessageRole.ASSISTANT
+            "system" -> MessageRole.SYSTEM
+            "developer" -> MessageRole.DEVELOPER
+            else -> MessageRole.ASSISTANT
+        }
+
+    val content: Any?
+        get() = message?.content
+
+    val isStreaming: Boolean
+        get() = false
+}
+
+data class MessageBody(
+    val role: String = "assistant",
+    val content: Any? = null,
 )
 
 enum class MessageRole {
-    @SerializedName("user") USER,
-    @SerializedName("assistant") ASSISTANT,
-    @SerializedName("system") SYSTEM,
-    @SerializedName("developer") DEVELOPER
+    USER,
+    ASSISTANT,
+    SYSTEM,
+    DEVELOPER
 }
 
 data class ContentBlock(
