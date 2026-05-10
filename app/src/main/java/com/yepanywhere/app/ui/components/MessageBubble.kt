@@ -1,14 +1,16 @@
 package com.yepanywhere.app.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.yepanywhere.app.data.model.Message
 import com.yepanywhere.app.data.model.MessageRole
@@ -72,6 +74,10 @@ fun MessageBubble(message: Message, modifier: Modifier = Modifier) {
     // Don't render empty bubbles
     if (text.isBlank() && !message.isStreaming) return
 
+    val lineCount = text.count { it == '\n' } + 1
+    val isLong = lineCount > 6
+    var expanded by remember(message.id) { mutableStateOf(false) }
+
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = if (isOutgoing) Arrangement.End else Arrangement.Start
@@ -83,16 +89,32 @@ fun MessageBubble(message: Message, modifier: Modifier = Modifier) {
 
         val bgColor = if (isOutgoing) BubbleOutgoingLight else BubbleIncomingLight
         val textColor = if (isOutgoing) Color.White else MaterialTheme.colorScheme.onSurface
+        val linkColor = if (isOutgoing) Color.White.copy(alpha = 0.7f) else Tint
 
-        Text(
-            text = text.ifBlank { "…" },
+        Column(
             modifier = Modifier
                 .widthIn(max = 280.dp)
                 .clip(shape)
                 .background(bgColor)
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            color = textColor,
-            style = YepType.body
-        )
+                .padding(horizontal = 14.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = text.ifBlank { "…" },
+                color = textColor,
+                style = YepType.body,
+                maxLines = if (isLong && !expanded) 2 else Int.MAX_VALUE,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (isLong) {
+                Text(
+                    text = if (expanded) "收起" else "展开全部",
+                    color = linkColor,
+                    style = YepType.caption1,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .clickable { expanded = !expanded }
+                )
+            }
+        }
     }
 }
