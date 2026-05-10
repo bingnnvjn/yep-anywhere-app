@@ -241,15 +241,15 @@ fun ChatScreen(
                     ) {
                         DropdownMenuItem(
                             text = { Text("🔒 默认模式") },
-                            onClick = { viewModel.dismissModeMenu() }
+                            onClick = { viewModel.setPermissionMode("default") }
                         )
                         DropdownMenuItem(
                             text = { Text("✏️ 信任编辑") },
-                            onClick = { viewModel.dismissModeMenu() }
+                            onClick = { viewModel.setPermissionMode("acceptEdits") }
                         )
                         DropdownMenuItem(
                             text = { Text("🛡️ 绕过模式") },
-                            onClick = { viewModel.dismissModeMenu() }
+                            onClick = { viewModel.setPermissionMode("bypassPermissions") }
                         )
                     }
                 }

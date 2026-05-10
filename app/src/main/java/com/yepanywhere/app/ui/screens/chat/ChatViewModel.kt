@@ -222,6 +222,13 @@ class ChatViewModel : ViewModel() {
         _showModeMenu.value = false
     }
 
+    fun setPermissionMode(mode: String) {
+        _showModeMenu.value = false
+        _permissionMode.value = mode
+        // Note: server-side mode change happens through approve_accept_edits flow
+        // Local state updates immediately for UI feedback
+    }
+
     private suspend fun refreshMessages() {
         val api = savedApi ?: return
         val pid = savedProjectId ?: return
