@@ -19,10 +19,20 @@ data class Session(
     val id: String,
     val projectId: String,
     val title: String?,
-    val messages: List<Message>,
     val provider: String,
     val model: String?,
     val activity: AgentActivity?,
+)
+
+data class SessionDetail(
+    val session: Session,
+    val messages: List<Message>,
+    val pagination: Pagination?,
+)
+
+data class Pagination(
+    val hasMore: Boolean?,
+    val oldestMessageId: String?,
 )
 
 enum class AgentActivity { IN_TURN, IDLE, WAITING_INPUT, HOLD, TERMINATED }

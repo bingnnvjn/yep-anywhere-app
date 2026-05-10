@@ -28,7 +28,7 @@ interface ApiService {
     suspend fun getSession(
         @Path("projectId") projectId: String,
         @Path("sessionId") sessionId: String
-    ): Session
+    ): SessionDetail
 
     @POST("/api/sessions/{sessionId}/messages")
     suspend fun sendMessage(

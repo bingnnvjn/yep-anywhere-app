@@ -19,9 +19,11 @@ class ChatViewModel : ViewModel() {
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                val session = api.getSession(projectId, sessionId)
-                _messages.value = session.messages
-            } catch (_: Exception) {} finally {
+                val detail = api.getSession(projectId, sessionId)
+                _messages.value = detail.messages
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
                 _isLoading.value = false
             }
         }
