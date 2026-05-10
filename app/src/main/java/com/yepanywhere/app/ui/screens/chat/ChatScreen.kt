@@ -42,6 +42,8 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val agentStatus by viewModel.agentStatus.collectAsState()
     val pendingInput by viewModel.pendingInput.collectAsState()
+    val permissionMode by viewModel.permissionMode.collectAsState()
+    val showModeMenu by viewModel.showModeMenu.collectAsState()
     val sheetState = rememberModalBottomSheetState(confirmValueChange = { false })
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
@@ -218,6 +220,39 @@ fun ChatScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                // Permission mode button
+                Box {
+                    IconButton(
+                        onClick = { viewModel.toggleModeMenu() },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Text(
+                            when (permissionMode) {
+                                "bypassPermissions" -> "🛡️"
+                                "acceptEdits" -> "✏️"
+                                else -> "🔒"
+                            },
+                            fontSize = 20.sp
+                        )
+                    }
+                    DropdownMenu(
+                        expanded = showModeMenu,
+                        onDismissRequest = { viewModel.dismissModeMenu() }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("🔒 默认模式") },
+                            onClick = { viewModel.dismissModeMenu() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("✏️ 信任编辑") },
+                            onClick = { viewModel.dismissModeMenu() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("🛡️ 绕过模式") },
+                            onClick = { viewModel.dismissModeMenu() }
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = inputText,
                     onValueChange = { inputText = it },
