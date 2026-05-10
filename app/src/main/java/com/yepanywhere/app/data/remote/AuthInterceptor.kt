@@ -20,20 +20,32 @@ class AuthInterceptor(
 
     private val cookieStore = mutableMapOf<String, List<Cookie>>()
     private var isLoggedIn = false
+    private var loginAttempted = false
 
     override fun intercept(chain: Interceptor.Chain): Response {
-        val request = chain.request()
+        // Add required header to all requests
+        val request = chain.request().newBuilder()
+            .header("X-Yep-Anywhere", "true")
+            .header("Content-Type", "application/json")
+            .build()
+
         val response = chain.proceed(request)
 
-        // If we get 401 and haven't logged in yet, try to login
-        if (response.code == 401 && !isLoggedIn) {
+        // If 401 and haven't tried login yet, try to login
+        if (response.code == 401 && !loginAttempted) {
             response.close()
+            loginAttempted = true
             val password = runBlocking { settingsStore.password.first() }
             if (password.isNotBlank()) {
                 val loginSuccess = login(password)
                 if (loginSuccess) {
-                    // Retry the original request with cookies
-                    return chain.proceed(request)
+                    isLoggedIn = true
+                    // Retry original request with cookies
+                    val retryRequest = chain.request().newBuilder()
+                        .header("X-Yep-Anywhere", "true")
+                        .header("Content-Type", "application/json")
+                        .build()
+                    return chain.proceed(retryRequest)
                 }
             }
         }
@@ -48,7 +60,8 @@ class AuthInterceptor(
 
         val body = """{"password":"$password"}""".toRequestBody("application/json".toMediaType())
         val request = Request.Builder()
-            .url("${baseUrl}auth/login")
+            .url("${baseUrl}api/auth/login")
+            .header("X-Yep-Anywhere", "true")
             .post(body)
             .build()
 
@@ -56,7 +69,6 @@ class AuthInterceptor(
             val response = client.newCall(request).execute()
             val success = response.isSuccessful
             response.close()
-            isLoggedIn = success
             success
         } catch (e: Exception) {
             false
