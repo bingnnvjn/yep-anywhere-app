@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.yepanywhere.app.data.model.Message
 import com.yepanywhere.app.data.model.MessageBody
+import com.yepanywhere.app.data.model.PendingInput
 import com.yepanywhere.app.data.remote.ApiService
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -25,6 +26,9 @@ class ChatViewModel : ViewModel() {
 
     private val _agentStatus = MutableStateFlow(AgentStatus.IDLE)
     val agentStatus: StateFlow<AgentStatus> = _agentStatus
+
+    private val _pendingInput = MutableStateFlow<PendingInput?>(null)
+    val pendingInput: StateFlow<PendingInput?> = _pendingInput
 
     private var savedApi: ApiService? = null
     private var savedProjectId: String? = null
@@ -91,6 +95,7 @@ class ChatViewModel : ViewModel() {
                 try {
                     refreshMessages()
                     checkAgentStatus()
+                    checkPendingInput()
                     val msgs = _messages.value
                     if (msgs.isNotEmpty() && msgs.last().role != com.yepanywhere.app.data.model.MessageRole.USER) {
                         _agentStatus.value = AgentStatus.IDLE
@@ -120,6 +125,85 @@ class ChatViewModel : ViewModel() {
             }
         } catch (e: Exception) {
             Log.e("ChatViewModel", "Failed to check status", e)
+        }
+    }
+
+    private suspend fun checkPendingInput() {
+        try {
+            val api = savedApi ?: return
+            val pid = savedProjectId ?: return
+            val sid = savedSessionId ?: return
+            val metadata = api.getSessionMetadata(pid, sid)
+            @Suppress("UNCHECKED_CAST")
+            val pending = metadata["pendingInputRequest"] as? Map<String, Any>?
+            if (pending != null) {
+                _pendingInput.value = PendingInput(
+                    id = pending["id"] as? String ?: "",
+                    sessionId = pending["sessionId"] as? String ?: "",
+                    type = pending["type"] as? String ?: "",
+                    prompt = pending["prompt"] as? String ?: "",
+                    toolName = pending["toolName"] as? String ?: "",
+                    toolInput = pending["toolInput"],
+                    timestamp = pending["timestamp"] as? String ?: ""
+                )
+            } else {
+                _pendingInput.value = null
+            }
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Failed to check pending input", e)
+        }
+    }
+
+    fun approveInput() {
+        viewModelScope.launch {
+            try {
+                val api = savedApi ?: return@launch
+                val sid = savedSessionId ?: return@launch
+                val input = _pendingInput.value ?: return@launch
+                api.submitInput(sid, mapOf(
+                    "requestId" to input.id,
+                    "response" to "approve"
+                ))
+                _pendingInput.value = null
+                _agentStatus.value = AgentStatus.THINKING
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to approve input", e)
+            }
+        }
+    }
+
+    fun approveAndAcceptEdits() {
+        viewModelScope.launch {
+            try {
+                val api = savedApi ?: return@launch
+                val sid = savedSessionId ?: return@launch
+                val input = _pendingInput.value ?: return@launch
+                api.submitInput(sid, mapOf(
+                    "requestId" to input.id,
+                    "response" to "approve_accept_edits"
+                ))
+                _pendingInput.value = null
+                _agentStatus.value = AgentStatus.THINKING
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to approve input", e)
+            }
+        }
+    }
+
+    fun denyInput() {
+        viewModelScope.launch {
+            try {
+                val api = savedApi ?: return@launch
+                val sid = savedSessionId ?: return@launch
+                val input = _pendingInput.value ?: return@launch
+                api.submitInput(sid, mapOf(
+                    "requestId" to input.id,
+                    "response" to "deny"
+                ))
+                _pendingInput.value = null
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to deny input", e)
+            }
         }
     }
 
