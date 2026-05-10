@@ -3,7 +3,7 @@ package com.yepanywhere.app.data.model
 data class Message(
     val id: String,
     val role: MessageRole,
-    val content: Any,
+    val content: Any? = null,
     val timestamp: String,
     val isStreaming: Boolean = false,
 )

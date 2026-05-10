@@ -31,6 +31,10 @@ fun MessageBubble(message: Message, modifier: Modifier = Modifier) {
 
         val text = when (val c = message.content) {
             is String -> c
+            is List<*> -> c.filterIsInstance<Map<*, *>>()
+                .mapNotNull { it["text"] as? String }
+                .joinToString("")
+            null -> ""
             else -> c.toString()
         }
 
