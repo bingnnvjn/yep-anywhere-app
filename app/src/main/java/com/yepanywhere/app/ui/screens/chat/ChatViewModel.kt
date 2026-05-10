@@ -89,6 +89,7 @@ class ChatViewModel : ViewModel() {
     }
 
     private fun startPolling() {
+        pollJob?.cancel()
         pollJob = viewModelScope.launch {
             val maxAttempts = 60 // 3 min max
             for (i in 1..maxAttempts) {
