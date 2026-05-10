@@ -42,7 +42,7 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val agentStatus by viewModel.agentStatus.collectAsState()
     val pendingInput by viewModel.pendingInput.collectAsState()
-    val sheetState = rememberModalBottomSheetState()
+    val sheetState = rememberModalBottomSheetState(confirmValueChange = { false })
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
@@ -259,7 +259,7 @@ fun ChatScreen(
         if (pendingInput != null) {
             val currentInput = pendingInput!!
             ModalBottomSheet(
-                onDismissRequest = { /* Sheet auto-dismisses on swipe/back; visibility controlled by pendingInput state */ },
+                onDismissRequest = { /* Non-dismissable: user must approve or deny */ },
                 sheetState = sheetState
             ) {
                 Column(
