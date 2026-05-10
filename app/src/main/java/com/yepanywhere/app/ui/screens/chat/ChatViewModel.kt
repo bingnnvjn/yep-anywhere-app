@@ -30,6 +30,12 @@ class ChatViewModel : ViewModel() {
     private val _pendingInput = MutableStateFlow<PendingInput?>(null)
     val pendingInput: StateFlow<PendingInput?> = _pendingInput
 
+    private val _permissionMode = MutableStateFlow("default")
+    val permissionMode: StateFlow<String> = _permissionMode
+
+    private val _showModeMenu = MutableStateFlow(false)
+    val showModeMenu: StateFlow<Boolean> = _showModeMenu
+
     private var savedApi: ApiService? = null
     private var savedProjectId: String? = null
     private var savedSessionId: String? = null
@@ -127,6 +133,11 @@ class ChatViewModel : ViewModel() {
                 else -> AgentStatus.IDLE
             }
 
+            val mode = ownership?.get("permissionMode") as? String
+            if (mode != null) {
+                _permissionMode.value = mode
+            }
+
             // Update pending input
             @Suppress("UNCHECKED_CAST")
             val pending = metadata["pendingInputRequest"] as? Map<String, Any>?
@@ -201,6 +212,14 @@ class ChatViewModel : ViewModel() {
                 Log.e("ChatViewModel", "Failed to deny input", e)
             }
         }
+    }
+
+    fun toggleModeMenu() {
+        _showModeMenu.value = !_showModeMenu.value
+    }
+
+    fun dismissModeMenu() {
+        _showModeMenu.value = false
     }
 
     private suspend fun refreshMessages() {
