@@ -1,5 +1,7 @@
 package com.yepanywhere.app.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class SessionSummary(
     val id: String,
     val projectId: String,
@@ -35,8 +37,18 @@ data class Pagination(
     val oldestMessageId: String?,
 )
 
-enum class AgentActivity { IN_TURN, IDLE, WAITING_INPUT, HOLD, TERMINATED }
-enum class PendingInputType { TOOL_APPROVAL, USER_QUESTION }
+enum class AgentActivity {
+    @SerializedName("in_turn") IN_TURN,
+    @SerializedName("idle") IDLE,
+    @SerializedName("waiting_input") WAITING_INPUT,
+    @SerializedName("hold") HOLD,
+    @SerializedName("terminated") TERMINATED
+}
+
+enum class PendingInputType {
+    @SerializedName("tool_approval") TOOL_APPROVAL,
+    @SerializedName("user_question") USER_QUESTION
+}
 
 data class ContextUsage(
     val inputTokens: Int,

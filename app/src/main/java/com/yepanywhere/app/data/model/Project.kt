@@ -1,5 +1,7 @@
 package com.yepanywhere.app.data.model
 
+import com.google.gson.annotations.SerializedName
+
 data class Project(
     val id: String,
     val name: String,
@@ -14,4 +16,8 @@ data class FileEntry(
     val status: FileStatus?,
 )
 
-enum class FileStatus { NEW, MODIFIED, DELETED }
+enum class FileStatus {
+    @SerializedName("new") NEW,
+    @SerializedName("modified") MODIFIED,
+    @SerializedName("deleted") DELETED
+}
