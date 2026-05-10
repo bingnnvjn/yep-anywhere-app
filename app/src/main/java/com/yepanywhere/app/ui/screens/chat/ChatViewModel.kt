@@ -36,6 +36,7 @@ class ChatViewModel : ViewModel() {
     private var pollJob: Job? = null
 
     fun loadSession(api: ApiService, projectId: String, sessionId: String) {
+        pollJob?.cancel()
         savedApi = api
         savedProjectId = projectId
         savedSessionId = sessionId
@@ -63,7 +64,7 @@ class ChatViewModel : ViewModel() {
                     message = MessageBody(role = "user", content = text),
                     timestamp = java.time.Instant.now().toString()
                 )
-                _messages.value = _messages.value + localMsg
+                _messages.update { it + localMsg }
 
                 val body = mapOf("message" to text)
                 var response = api.sendMessage(sessionId, body)
@@ -94,8 +95,7 @@ class ChatViewModel : ViewModel() {
                 delay(3000)
                 try {
                     refreshMessages()
-                    checkAgentStatus()
-                    checkPendingInput()
+                    fetchAndUpdateStatus()
                     val msgs = _messages.value
                     if (msgs.isNotEmpty() && msgs.last().role != com.yepanywhere.app.data.model.MessageRole.USER) {
                         _agentStatus.value = AgentStatus.IDLE
@@ -109,31 +109,24 @@ class ChatViewModel : ViewModel() {
         }
     }
 
-    private suspend fun checkAgentStatus() {
+    private suspend fun fetchAndUpdateStatus() {
         try {
             val api = savedApi ?: return
             val pid = savedProjectId ?: return
             val sid = savedSessionId ?: return
             val metadata = api.getSessionMetadata(pid, sid)
+
+            // Update agent status
             @Suppress("UNCHECKED_CAST")
-            val ownership = metadata["ownership"] as? Map<String, Any> ?: return
-            val state = ownership["state"] as? String
+            val ownership = metadata["ownership"] as? Map<String, Any>
+            val state = ownership?.get("state") as? String
             _agentStatus.value = when (state) {
                 "in_turn" -> AgentStatus.THINKING
                 "waiting-input" -> AgentStatus.WAITING_INPUT
                 else -> AgentStatus.IDLE
             }
-        } catch (e: Exception) {
-            Log.e("ChatViewModel", "Failed to check status", e)
-        }
-    }
 
-    private suspend fun checkPendingInput() {
-        try {
-            val api = savedApi ?: return
-            val pid = savedProjectId ?: return
-            val sid = savedSessionId ?: return
-            val metadata = api.getSessionMetadata(pid, sid)
+            // Update pending input
             @Suppress("UNCHECKED_CAST")
             val pending = metadata["pendingInputRequest"] as? Map<String, Any>?
             if (pending != null) {
@@ -150,7 +143,7 @@ class ChatViewModel : ViewModel() {
                 _pendingInput.value = null
             }
         } catch (e: Exception) {
-            Log.e("ChatViewModel", "Failed to check pending input", e)
+            Log.e("ChatViewModel", "Failed to fetch session status", e)
         }
     }
 
@@ -166,6 +159,7 @@ class ChatViewModel : ViewModel() {
                 ))
                 _pendingInput.value = null
                 _agentStatus.value = AgentStatus.THINKING
+                startPolling()
             } catch (e: Exception) {
                 Log.e("ChatViewModel", "Failed to approve input", e)
             }
@@ -184,8 +178,9 @@ class ChatViewModel : ViewModel() {
                 ))
                 _pendingInput.value = null
                 _agentStatus.value = AgentStatus.THINKING
+                startPolling()
             } catch (e: Exception) {
-                Log.e("ChatViewModel", "Failed to approve input", e)
+                Log.e("ChatViewModel", "Failed to approve and accept edits", e)
             }
         }
     }
