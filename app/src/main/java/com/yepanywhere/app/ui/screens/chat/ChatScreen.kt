@@ -17,8 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.yepanywhere.app.data.model.PendingInput
 import androidx.compose.runtime.collectAsState
 import com.yepanywhere.app.data.model.Message
 import com.yepanywhere.app.data.model.MessageRole
@@ -39,6 +43,8 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val agentStatus by viewModel.agentStatus.collectAsState()
+    val pendingInput by viewModel.pendingInput.collectAsState()
+    val sheetState = rememberModalBottomSheetState()
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     var showMenu by remember { mutableStateOf(false) }
@@ -247,6 +253,131 @@ fun ChatScreen(
                         tint = if (inputText.isNotBlank()) Color.White else MaterialTheme.colorScheme.outline,
                         modifier = Modifier.size(20.dp)
                     )
+                }
+            }
+        }
+
+        // Permission approval sheet
+        if (pendingInput != null) {
+            ModalBottomSheet(
+                onDismissRequest = { /* Don't allow dismiss by tapping outside */ },
+                sheetState = sheetState
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                ) {
+                    // Header
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            when (pendingInput?.toolName) {
+                                "Bash" -> "⚙️"
+                                "Edit", "Write" -> "📝"
+                                else -> "🔧"
+                            },
+                            fontSize = 28.sp
+                        )
+                        Column {
+                            Text(
+                                pendingInput?.toolName ?: "",
+                                style = YepType.headline,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Text(
+                                when (pendingInput?.toolName) {
+                                    "Bash" -> "命令执行"
+                                    "Edit" -> "文件编辑"
+                                    "Write" -> "文件写入"
+                                    else -> "工具调用"
+                                },
+                                style = YepType.caption1,
+                                color = MaterialTheme.colorScheme.outline
+                            )
+                        }
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    // Tool input content
+                    val toolInputText = when (val input = pendingInput?.toolInput) {
+                        is Map<*, *> -> {
+                            when (pendingInput?.toolName) {
+                                "Bash" -> input["command"] as? String ?: input.toString()
+                                "Edit" -> {
+                                    val filePath = input["file_path"] as? String ?: ""
+                                    "编辑: $filePath"
+                                }
+                                else -> input.toString()
+                            }
+                        }
+                        is String -> input
+                        else -> pendingInput?.prompt ?: ""
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
+                            .padding(12.dp)
+                    ) {
+                        Text(
+                            toolInputText,
+                            style = YepType.body,
+                            fontFamily = FontFamily.Monospace,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+
+                    // File path if available
+                    val filePath = (pendingInput?.toolInput as? Map<*, *>)?.get("file_path") as? String
+                    if (filePath != null) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "📄 $filePath",
+                            style = YepType.caption1,
+                            color = Tint
+                        )
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    // Buttons
+                    Button(
+                        onClick = { viewModel.approveInput() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Green),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("✓ 允许", modifier = Modifier.padding(vertical = 4.dp))
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    OutlinedButton(
+                        onClick = { viewModel.approveAndAcceptEdits() },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("允许并信任编辑", color = Tint)
+                    }
+
+                    Spacer(Modifier.height(8.dp))
+
+                    Button(
+                        onClick = { viewModel.denyInput() },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Red),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("✗ 拒绝", modifier = Modifier.padding(vertical = 4.dp))
+                    }
+
+                    Spacer(Modifier.height(16.dp))
                 }
             }
         }

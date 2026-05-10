@@ -54,5 +54,5 @@ data class PendingInput(
     val prompt: String = "",
     val toolName: String = "",
     val toolInput: Any? = null,
-    val timestamp: String = ""
+    val timestamp: String = "",
 )
