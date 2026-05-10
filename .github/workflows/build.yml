@@ -31,8 +31,20 @@ jobs:
       - name: Generate Gradle Wrapper
         run: gradle wrapper --gradle-version=8.9
 
+      - name: Cache Debug Keystore
+        uses: actions/cache@v4
+        with:
+          path: debug.keystore
+          key: debug-keystore-v1
+
+      - name: Generate Debug Keystore
+        run: |
+          if [ ! -f debug.keystore ]; then
+            keytool -genkeypair -v -keystore debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Debug, OU=Debug, O=Debug, L=Debug, ST=Debug, C=US"
+          fi
+
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --no-daemon
+        run: ./gradlew assembleDebug --no-daemon -Pandroid.injected.signing.store.file=debug.keystore -Pandroid.injected.signing.store.password=android -Pandroid.injected.signing.key.alias=androiddebugkey -Pandroid.injected.signing.key.password=android
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
